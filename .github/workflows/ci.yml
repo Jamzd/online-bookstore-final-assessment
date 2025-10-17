@@ -1,16 +1,8 @@
-GNU nano 7.2              .github/workflows/ci.yml *                     
-i 
+GNU nano 7.2              .github/workflows/ci.yml *                      
 
 
 
-
-
-
-
-
-
-
-name: Python CI/CD
+name: Python CI/CD - Online Bookstore
 
 on:
   push:
@@ -19,44 +11,45 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  test-and-profile:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        python-version: [3.11]
-
     steps:
-      # 1️⃣ Checkout the repo
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      # 2️⃣ Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      # 3️⃣ Install dependencies
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 4️⃣ Run unit and integration tests
-      - name: Run pytest
-        run: |
-          pytest tests/unit --maxfail=1 --disable-warnings -q
-          pytest tests/integration --maxfail=1 --disable-warnings -q
+    - name: Run Unit Tests
+      run: |
+        echo "===== Running Unit Tests ====="
+        pytest tests/unit --maxfail=1 --disable-warnings -v | tee unit_test_output.log
 
-      # 5️⃣ Run performance tests (optional)
-      - name: Run performance smoke tests
-        run: |
-          pytest tests/perf --maxfail=1 --disable-warnings -q
+    - name: Run Integration Tests
+      run: |
+        echo "===== Running Integration Tests ====="
+        pytest tests/integration --maxfail=1 --disable-warnings -v | tee integration_test_output.log
 
-      # 6️⃣ Optional: Show coverage (if you add pytest-cov)
-      # - name: Generate coverage report
-      #   run: |
-      #     pytest --cov=./ --cov-report=xml
+    - name: Run Performance Profiling
+      run: |
+        echo "===== Running Performance Profiling ====="
+        python -m cProfile -o perf/profile_output.prof tests/perf/test_perf_smoke.py
+        python -m timeit -n 100 -s "from models import Cart, Book; b=Book('Demo','Test',10, ''); c=Cart()" "c.add_book(b,1)"
 
+    - name: Upload Test Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-artifacts
+        path: |
+          unit_test_output.log
+          integration_test_output.log
+          perf/profile_output.prof
 
