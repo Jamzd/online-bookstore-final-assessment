@@ -1,3 +1,56 @@
+# models.py
+
+import hashlib
+import re
+
+class User:
+    """Secure User account management class with session handling"""
+    
+    def __init__(self, email, password, name="", address=""):
+        # Validate email format
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ValueError("Invalid email format")
+        self.email = email.lower()  # normalize for duplicates
+        
+        # Store hashed password
+        self.hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self._raw_password = None  # prevent storing plaintext
+        
+        self.name = name
+        self.address = address
+        self.orders = []
+        self.logged_in = False  # track session state
+
+    # --------------------------
+    # Password handling
+    # --------------------------
+    def verify_password(self, password):
+        return self.hashed_password == hashlib.sha256(password.encode()).hexdigest()
+
+    # --------------------------
+    # Session handling
+    # --------------------------
+    def login(self, password):
+        if self.verify_password(password):
+            self.logged_in = True
+            return True
+        return False
+
+    def logout(self):
+        self.logged_in = False
+
+    # --------------------------
+    # Order handling
+    # --------------------------
+    def add_order(self, order):
+        self.orders.append(order)
+        self.orders.sort(key=lambda x: getattr(x, "order_date", None))
+
+    def get_order_history(self):
+        return self.orders
+
+
+
 class Book:
     def __init__(self, title, category, price, image):
         self.title = title
@@ -72,23 +125,7 @@ class Cart:
         return len(self.items) == 0
 
 
-class User:
-    """User account management class"""
-    def __init__(self, email, password, name="", address=""):
-        self.email = email
-        self.password = password
-        self.name = name
-        self.address = address
-        self.orders = []
-        self.temp_data = []
-        self.cache = {}
-    
-    def add_order(self, order):
-        self.orders.append(order)
-        self.orders.sort(key=lambda x: x.order_date)
-    
-    def get_order_history(self):
-        return [order for order in self.orders]
+
 
 
 class Order:
