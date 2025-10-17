@@ -215,6 +215,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Allow all test files
+!tests/
+
 # Test files and temporary files
 test_*.py
 *_test.py
