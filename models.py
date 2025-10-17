@@ -3,6 +3,9 @@
 import hashlib
 import re
 
+# --------------------------
+# User class
+# --------------------------
 class User:
     """Secure User account management class with session handling"""
     
@@ -50,15 +53,22 @@ class User:
         return self.orders
 
 
-
+# --------------------------
+# Book class
+# --------------------------
 class Book:
     def __init__(self, title, category, price, image):
+        if price < 0:
+            raise ValueError("Price must be non-negative")
         self.title = title
         self.category = category
         self.price = price
         self.image = image
 
 
+# --------------------------
+# CartItem class
+# --------------------------
 class CartItem:
     def __init__(self, book, quantity=1):
         self.book = book
@@ -68,30 +78,18 @@ class CartItem:
         return self.book.price * self.quantity
 
 
+# --------------------------
+# Cart class
+# --------------------------
 class Cart:
-    """
-    A shopping cart class that holds book items and their quantities.
-
-    The Cart uses a dictionary with book titles as keys for efficient lookups,
-    allowing operations like adding, removing, and updating book quantities.
-
-    Attributes:
-        items (dict): Dictionary storing CartItem objects with book titles as keys.
-
-    Methods:
-        add_book(book, quantity=1): Add a book to the cart with specified quantity.
-        remove_book(book_title): Remove a book from the cart by title.
-        update_quantity(book_title, quantity): Update quantity of a book in the cart.
-        get_total_price(): Calculate total price of all items in the cart.
-        get_total_items(): Get the total count of all books in the cart.
-        clear(): Remove all items from the cart.
-        get_items(): Return a list of all CartItem objects in the cart.
-        is_empty(): Check if the cart has no items.
-    """
+    """A shopping cart for books"""
+    
     def __init__(self):
-        self.items = {}  # Using dict with book title as key for easy lookup
+        self.items = {}  # key: book title, value: CartItem
 
     def add_book(self, book, quantity=1):
+        if not isinstance(quantity, int):
+            raise TypeError("Quantity must be an integer")
         if book.title in self.items:
             self.items[book.title].quantity += quantity
         else:
@@ -101,16 +99,15 @@ class Cart:
         if book_title in self.items:
             del self.items[book_title]
 
-    def update_quantity(self, book_title, quantity):
-        if book_title in self.items:
-            self.items[book_title].quantity = quantity
+    def update_quantity(self, title, quantity):
+        if title in self.items:
+            if quantity <= 0:
+                del self.items[title]
+            else:
+                self.items[title].quantity = quantity
 
     def get_total_price(self):
-        total = 0
-        for item in self.items.values():
-            for i in range(item.quantity):
-                total += item.book.price
-        return total
+        return sum(item.book.price * item.quantity for item in self.items.values())
 
     def get_total_items(self):
         return sum(item.quantity for item in self.items.values())
@@ -125,9 +122,9 @@ class Cart:
         return len(self.items) == 0
 
 
-
-
-
+# --------------------------
+# Order class
+# --------------------------
 class Order:
     """Order management class"""
     def __init__(self, order_id, user_email, items, shipping_info, payment_info, total_amount):
@@ -153,6 +150,9 @@ class Order:
         }
 
 
+# --------------------------
+# PaymentGateway class
+# --------------------------
 class PaymentGateway:
     """Mock payment gateway for processing payments"""
     
@@ -171,14 +171,10 @@ class PaymentGateway:
         
         import random
         import time
-        import datetime
         
         time.sleep(0.1)
         
         transaction_id = f"TXN{random.randint(100000, 999999)}"
-        
-        if payment_info.get('payment_method') == 'paypal':
-            pass
         
         return {
             'success': True,
@@ -187,6 +183,9 @@ class PaymentGateway:
         }
 
 
+# --------------------------
+# EmailService class
+# --------------------------
 class EmailService:
     """Mock email service for sending order confirmations"""
     
@@ -205,3 +204,4 @@ class EmailService:
         print(f"==================\n")
         
         return True
+
