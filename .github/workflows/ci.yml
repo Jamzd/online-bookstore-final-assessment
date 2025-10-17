@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
+      # Step 1: Checkout your repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set up Python
+      # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -31,13 +31,19 @@ jobs:
 
       # Step 4: Run Unit Tests
       - name: Run Unit Tests
-        run: PYTHONPATH=. pytest tests/unit -v
+        run: |
+          export PYTHONPATH=.
+          pytest tests/unit -v
 
       # Step 5: Run Integration Tests
       - name: Run Integration Tests
-        run: PYTHONPATH=. pytest tests/integration -v
+        run: |
+          export PYTHONPATH=.
+          pytest tests/integration -v
 
-      # Step 6: Run Performance Tests
-      - name: Run Performance Tests
-        run: PYTHONPATH=. pytest tests/perf -v
+      # Step 6: Run Performance Test
+      - name: Run Performance Test
+        run: |
+          export PYTHONPATH=.
+          pytest tests/perf -v
 
