@@ -1,55 +1,37 @@
-GNU nano 7.2              .github/workflows/ci.yml *                      
-
-
-
 name: Python CI/CD - Online Bookstore
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   test-and-profile:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run Unit Tests
-      run: |
-        echo "===== Running Unit Tests ====="
-        pytest tests/unit --maxfail=1 --disable-warnings -v | tee unit_test_output.log
+      - name: Run Unit Tests
+        run: pytest tests/unit -v
 
-    - name: Run Integration Tests
-      run: |
-        echo "===== Running Integration Tests ====="
-        pytest tests/integration --maxfail=1 --disable-warnings -v | tee integration_test_output.log
+      - name: Run Integration Tests
+        run: pytest tests/integration -v
 
-    - name: Run Performance Profiling
-      run: |
-        echo "===== Running Performance Profiling ====="
-        python -m cProfile -o perf/profile_output.prof tests/perf/test_perf_smoke.py
-        python -m timeit -n 100 -s "from models import Cart, Book; b=Book('Demo','Test',10, ''); c=Cart()" "c.add_book(b,1)"
-
-    - name: Upload Test Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-artifacts
-        path: |
-          unit_test_output.log
-          integration_test_output.log
-          perf/profile_output.prof
+      - name: Run Performance Test
+        run: pytest tests/perf -v
 
