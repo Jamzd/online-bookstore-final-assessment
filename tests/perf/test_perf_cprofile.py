@@ -8,6 +8,7 @@ def test_cart_total_cprofile():
     book = Book("Perf Book", "Test", 10.0, "image.jpg")
 
     def cart_operations():
+        cart.clear()  # Reset cart to avoid accumulation
         for _ in range(100):
             cart.add_book(book, quantity=2)
         return cart.get_total_price()
@@ -21,4 +22,5 @@ def test_cart_total_cprofile():
 
     # Assert correctness after profiling
     assert total == 100 * 2 * 10.0
+
 

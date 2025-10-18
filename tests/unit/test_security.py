@@ -1,26 +1,30 @@
-# File: tests/unit/test_security.py
 import pytest
-from models import User
+from models import User, Book, Cart
 import hashlib
 
+# -------------------------------
+# Password hashing tests
+# -------------------------------
 def test_password_is_hashed():
-    """
-    Ensure passwords are not stored in plaintext.
-    Assumes User stores a 'hashed_password' attribute.
-    """
+    """Ensure passwords are stored hashed and not in plaintext"""
     raw_password = "SecurePass123"
     user = User(email="secure@example.com", password=raw_password, name="Tester", address="123 Lane")
 
-    # Check that the raw password is not stored directly
-    assert getattr(user, "password", None) != raw_password
+    # Plain 'password' attribute should not exist
+    assert not hasattr(user, "password")
 
-    # Optional: check hashing method (example using sha256)
+    # Hashed password exists and matches SHA256 of raw_password
     expected_hash = hashlib.sha256(raw_password.encode()).hexdigest()
-    assert getattr(user, "hashed_password", None) == expected_hash
+    assert user.hashed_password == expected_hash
 
+    # verify_password returns True for correct password
+    assert user.verify_password(raw_password) is True
+    # False for wrong password
+    assert user.verify_password("wrong") is False
 
-
-
+# -------------------------------
+# Email validation tests
+# -------------------------------
 def test_email_validation():
     """Check for invalid and duplicate emails"""
     users = {}
@@ -30,7 +34,7 @@ def test_email_validation():
     users[user1.email.lower()] = user1
     assert user1.email.lower() in users
 
-    # Duplicate email (case-insensitive)
+    # Duplicate email (case-insensitive simulation)
     with pytest.raises(Exception):
         duplicate_email = "Test@Example.com"
         if duplicate_email.lower() in users:
@@ -42,29 +46,26 @@ def test_email_validation():
         with pytest.raises(ValueError):
             User(email=email, password="pass", name="B", address="Addr")
 
-
-
-
+# -------------------------------
+# Input sanitization / XSS
+# -------------------------------
 def test_input_sanitization():
     """Ensure inputs are safely handled"""
-    from models import Book, Cart
-
-    # Simulate potentially malicious input
     malicious_title = "<script>alert('xss')</script>"
     book = Book(title=malicious_title, category="Test", price=10, image="img.jpg")
+    assert book.title == malicious_title  # stored safely as string
 
-    # Ensure the title is stored safely (no actual execution)
-    assert book.title == malicious_title
-
-
+# -------------------------------
+# Session login/logout
+# -------------------------------
 def test_session_logout():
     """Simulate login and logout"""
-    user = User(email="session@example.com", password="pass", name="Tester", address="123 Lane")
+    user = User(email="session@example.com", password="MyPass123", name="Tester", address="123 Lane")
     
-    # Simulate login
-    user.login()
-    assert user.is_logged_in is True
+    # Login with correct password
+    assert user.login("MyPass123") is True
+    assert user.logged_in is True
 
-    # Simulate logout
+    # Logout
     user.logout()
-    assert user.is_logged_in is False
+    assert user.logged_in is False

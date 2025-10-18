@@ -8,6 +8,8 @@ def test_cart_total_timeit():
     book = Book("Perf Book", "Test", 10.0, "image.jpg")
 
     def cart_operations():
+        # Reset cart each iteration to avoid accumulation
+        cart.clear()
         cart.add_book(book, quantity=5)
         cart.get_total_price()
 
@@ -17,6 +19,8 @@ def test_cart_total_timeit():
     # Assert the operation is reasonably fast
     assert duration < 1.0  # adjust threshold if needed
     
-    # Optional: verify correctness
+    # Optional: verify correctness of last operation
+    cart.clear()
+    cart.add_book(book, quantity=5)
     total = cart.get_total_price()
-    assert total == 5 * 10.0  # last operation's total
+    assert total == 5 * 10.0

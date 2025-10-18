@@ -1,60 +1,10 @@
 # models.py
-
+import datetime
+import random
 import hashlib
-import re
 
 # --------------------------
-# User class
-# --------------------------
-class User:
-    """Secure User account management class with session handling"""
-    
-    def __init__(self, email, password, name="", address=""):
-        # Validate email format
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            raise ValueError("Invalid email format")
-        self.email = email.lower()  # normalize for duplicates
-        
-        # Store hashed password
-        self.hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        self._raw_password = None  # prevent storing plaintext
-        
-        self.name = name
-        self.address = address
-        self.orders = []
-        self.logged_in = False  # track session state
-
-    # --------------------------
-    # Password handling
-    # --------------------------
-    def verify_password(self, password):
-        return self.hashed_password == hashlib.sha256(password.encode()).hexdigest()
-
-    # --------------------------
-    # Session handling
-    # --------------------------
-    def login(self, password):
-        if self.verify_password(password):
-            self.logged_in = True
-            return True
-        return False
-
-    def logout(self):
-        self.logged_in = False
-
-    # --------------------------
-    # Order handling
-    # --------------------------
-    def add_order(self, order):
-        self.orders.append(order)
-        self.orders.sort(key=lambda x: getattr(x, "order_date", None))
-
-    def get_order_history(self):
-        return self.orders
-
-
-# --------------------------
-# Book class
+# BOOK & CART
 # --------------------------
 class Book:
     def __init__(self, title, category, price, image):
@@ -66,9 +16,6 @@ class Book:
         self.image = image
 
 
-# --------------------------
-# CartItem class
-# --------------------------
 class CartItem:
     def __init__(self, book, quantity=1):
         self.book = book
@@ -78,14 +25,10 @@ class CartItem:
         return self.book.price * self.quantity
 
 
-# --------------------------
-# Cart class
-# --------------------------
 class Cart:
-    """A shopping cart for books"""
-    
+    """Shopping cart holding books with quantities"""
     def __init__(self):
-        self.items = {}  # key: book title, value: CartItem
+        self.items = {}
 
     def add_book(self, book, quantity=1):
         if not isinstance(quantity, int):
@@ -99,15 +42,18 @@ class Cart:
         if book_title in self.items:
             del self.items[book_title]
 
-    def update_quantity(self, title, quantity):
-        if title in self.items:
+    def update_quantity(self, book_title, quantity):
+        if book_title in self.items:
             if quantity <= 0:
-                del self.items[title]
+                del self.items[book_title]
             else:
-                self.items[title].quantity = quantity
+                self.items[book_title].quantity = quantity
 
     def get_total_price(self):
-        return sum(item.book.price * item.quantity for item in self.items.values())
+        total = 0
+        for item in self.items.values():
+            total += item.book.price * item.quantity
+        return total
 
     def get_total_items(self):
         return sum(item.quantity for item in self.items.values())
@@ -121,23 +67,54 @@ class Cart:
     def is_empty(self):
         return len(self.items) == 0
 
+# --------------------------
+# USER & SECURITY
+# --------------------------
+import re
+
+class User:
+    def __init__(self, email, password, name, address):
+        # stricter email validation
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ValueError("Invalid email")
+        self.email = email
+        self.hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.name = name
+        self.address = address
+        self.logged_in = False
+
+
+    def verify_password(self, password):
+        return hashlib.sha256(password.encode()).hexdigest() == self.hashed_password
+
+    def login(self, password):
+        if self.verify_password(password):
+            self.logged_in = True
+            return True
+        return False
+
+    def logout(self):
+        self.logged_in = False
+
+    def add_order(self, order):
+        self.orders.append(order)
+        self.orders.sort(key=lambda x: x.order_date)
 
 # --------------------------
-# Order class
+# ORDER
 # --------------------------
 class Order:
-    """Order management class"""
-    def __init__(self, order_id, user_email, items, shipping_info, payment_info, total_amount):
-        import datetime
-        self.order_id = order_id
+    """Order with items, user, payment info, and date"""
+    def __init__(self, user_email, items, shipping_info, payment_info, total_amount):
+        self.order_id = f"ORD{random.randint(1000, 9999)}"
         self.user_email = user_email
-        self.items = items.copy()  # Copy of cart items
+        self.items = items.copy()
         self.shipping_info = shipping_info
         self.payment_info = payment_info
         self.total_amount = total_amount
         self.order_date = datetime.datetime.now()
         self.status = "Confirmed"
-    
+
     def to_dict(self):
         return {
             'order_id': self.order_id,
@@ -149,49 +126,37 @@ class Order:
             'status': self.status
         }
 
-
 # --------------------------
-# PaymentGateway class
+# PAYMENT
 # --------------------------
 class PaymentGateway:
-    """Mock payment gateway for processing payments"""
-    
+    """Mock payment gateway"""
     @staticmethod
     def process_payment(payment_info):
-        """Mock payment processing - returns success/failure with mock logic"""
         card_number = payment_info.get('card_number', '')
-        
-        # Mock logic: cards ending in '1111' fail, others succeed
+
         if card_number.endswith('1111'):
             return {
                 'success': False,
                 'message': 'Payment failed: Invalid card number',
                 'transaction_id': None
             }
-        
-        import random
-        import time
-        
-        time.sleep(0.1)
-        
+
         transaction_id = f"TXN{random.randint(100000, 999999)}"
-        
         return {
             'success': True,
             'message': 'Payment processed successfully',
             'transaction_id': transaction_id
         }
 
-
 # --------------------------
-# EmailService class
+# EMAIL
 # --------------------------
 class EmailService:
-    """Mock email service for sending order confirmations"""
-    
+    """Mock email service"""
     @staticmethod
     def send_order_confirmation(user_email, order):
-        """Mock email sending - just prints to console in this implementation"""
+        # Mock sending email (just prints)
         print(f"\n=== EMAIL SENT ===")
         print(f"To: {user_email}")
         print(f"Subject: Order Confirmation - Order #{order.order_id}")
@@ -202,6 +167,5 @@ class EmailService:
             print(f"  - {item.book.title} x{item.quantity} @ ${item.book.price:.2f}")
         print(f"Shipping Address: {order.shipping_info.get('address', 'N/A')}")
         print(f"==================\n")
-        
-        return True
 
+        return {"to": user_email, "order_id": order.order_id, "status": "sent"}
