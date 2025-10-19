@@ -42,6 +42,15 @@ def test_user_registration_and_login():
 # CART OPERATIONS & EDGE CASES
 # --------------------------
 def test_cart_operations_and_edge_cases():
+    """
+    Test adding, updating, and removing books in the cart.
+    
+    Checks:
+    - Multiple books
+    - Updating to zero
+    - Negative quantities
+    - Removing non-existent books
+    """
     books = create_demo_books()
     cart = Cart()
 

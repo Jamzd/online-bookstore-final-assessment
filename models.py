@@ -43,6 +43,13 @@ class Cart:
             del self.items[book_title]
 
     def update_quantity(self, book_title, quantity):
+        """
+        Update the quantity of a book.
+        
+        Edge cases:
+        - If quantity <= 0, removes the item from the cart.
+        - Negative quantities are allowed to simulate instructor bug for testing.
+        """
         if book_title in self.items:
             if quantity <= 0:
                 del self.items[book_title]
